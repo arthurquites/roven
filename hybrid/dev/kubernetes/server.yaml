@@ -60,6 +60,7 @@ data:
      NodeAttestor "hybrid" {
         plugin_cmd = "/usr/local/bin/serverattestor"
         plugin_data {
+          spiffe_id = "spiffe://acme.com/billing/payments"
           plugins {
             k8s_psat {
               clusters = {

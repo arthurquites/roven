@@ -42,6 +42,7 @@ type HybridPluginServer struct {
 	broker      pluginsdk.ServiceBroker
 	interceptor ServerInterceptorInterface
 	initStatus  error
+	spiffeId    string
 }
 
 func New() *HybridPluginServer {
@@ -87,6 +88,7 @@ func (p *HybridPluginServer) Attest(stream nodeattestorv1.NodeAttestor_AttestSer
 	p.interceptor.SetContext(stream.Context())
 	p.interceptor.SetLogger(p.logger)
 	p.interceptor.SetReq(req)
+	p.interceptor.SetSpiffeID(p.spiffeId)
 
 	for i := 0; i < len(p.pluginList); i++ {
 		elem := reflect.ValueOf(p.pluginList[i].Plugin)
@@ -163,6 +165,8 @@ func (p *HybridPluginServer) decodeStringAndTransformToAstNode(hclData string) (
 
 	var data bytes.Buffer
 	printer.DefaultConfig.Fprint(&data, genericData.Plugins)
+
+	p.spiffeId = genericData.SpiffeId
 
 	var astNodeData common.Generics
 
