@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"k8s.io/utils/strings/slices"
 	"reflect"
 	"strings"
 
@@ -31,18 +32,19 @@ var (
 )
 
 type HybridPluginServer struct {
-	pluginList []common.Types
+	pluginList  []common.Types
+	pluginNames []string
 	nodeattestorbase.Base
 	agentstorev1.UnimplementedAgentStoreServer
 	nodeattestorv1.UnimplementedNodeAttestorServer
 	configv1.UnsafeConfigServer
 
-	logger      hclog.Logger
-	store       agentstorev1.AgentStoreServiceClient
-	broker      pluginsdk.ServiceBroker
-	interceptor ServerInterceptorInterface
-	initStatus  error
-	spiffeId    string
+	logger        hclog.Logger
+	store         agentstorev1.AgentStoreServiceClient
+	broker        pluginsdk.ServiceBroker
+	interceptor   ServerInterceptorInterface
+	initStatus    error
+	usedSpiffeIds []string
 }
 
 func New() *HybridPluginServer {
@@ -88,9 +90,9 @@ func (p *HybridPluginServer) Attest(stream nodeattestorv1.NodeAttestor_AttestSer
 	p.interceptor.SetContext(stream.Context())
 	p.interceptor.SetLogger(p.logger)
 	p.interceptor.SetReq(req)
-	p.interceptor.SetSpiffeID(p.spiffeId)
 
 	for i := 0; i < len(p.pluginList); i++ {
+		p.interceptor.SetMultipleSpiffeIds(slices.Contains(p.usedSpiffeIds, p.pluginNames[i]))
 		elem := reflect.ValueOf(p.pluginList[i].Plugin)
 		elem.MethodByName("SetLogger").Call([]reflect.Value{reflect.ValueOf(p.logger)})
 		result := elem.MethodByName("Attest").Call([]reflect.Value{reflect.ValueOf(p.interceptor)})
@@ -135,6 +137,8 @@ func (p *HybridPluginServer) Configure(ctx context.Context, req *configv1.Config
 
 	pluginNames, pluginsData := p.parseReceivedData(pluginData)
 
+	p.pluginNames = pluginNames
+
 	p.pluginList, p.initStatus = p.initPlugins(pluginNames)
 
 	if len(p.pluginList) == 0 || p.initStatus != nil {
@@ -166,9 +170,9 @@ func (p *HybridPluginServer) decodeStringAndTransformToAstNode(hclData string) (
 	var data bytes.Buffer
 	printer.DefaultConfig.Fprint(&data, genericData.Plugins)
 
-	p.spiffeId = genericData.SpiffeId
-
 	var astNodeData common.Generics
+
+	p.usedSpiffeIds = genericData.CustomSpiffeId
 
 	if err := hcl.Decode(&astNodeData, data.String()); err != nil {
 	}
