@@ -60,6 +60,7 @@ data:
      NodeAttestor "hybrid" {
         plugin_cmd = "/usr/local/bin/serverattestor"
         plugin_data {
+          custom_spiffe_id = ["k8s_psat", "aws_iid"]
           plugins {
             k8s_psat {
               clusters = {

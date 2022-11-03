@@ -12,5 +12,6 @@ type Types struct {
 type Generics map[string]ast.Node
 
 type GenericPluginSuper struct {
-	Plugins ast.Node `hcl:"plugins"`
+	Plugins        ast.Node `hcl:"plugins"`
+	CustomSpiffeId []string `hcl:"custom_spiffe_id"`
 }

@@ -20,18 +20,20 @@ type ServerInterceptorInterface interface {
 	CombinedSelectors() []string
 	Stream() nodeattestorv1.NodeAttestor_AttestServer
 	ResetInterceptor()
+	SetMultipleSpiffeIds(state bool)
 }
 
 type HybridPluginServerInterceptor struct {
 	ctx    context.Context
 	stream nodeattestorv1.NodeAttestor_AttestServer
 	nodeattestorv1.NodeAttestor_AttestServer
-	logger            hclog.Logger
-	req               *nodeattestorv1.AttestRequest
-	Response          *nodeattestorv1.AttestResponse
-	combinedSelectors []string
-	spiffeID          string
-	canReattest       []bool
+	logger             hclog.Logger
+	req                *nodeattestorv1.AttestRequest
+	Response           *nodeattestorv1.AttestResponse
+	combinedSelectors  []string
+	spiffeID           string
+	canReattest        []bool
+	multiplesSpiffeIds bool
 }
 
 func (m *HybridPluginServerInterceptor) ResetInterceptor() {
@@ -57,8 +59,11 @@ func (m *HybridPluginServerInterceptor) Send(resp *nodeattestorv1.AttestResponse
 	switch x := resp.Response.(type) {
 	case *nodeattestorv1.AttestResponse_AgentAttributes:
 		m.combinedSelectors = append(m.combinedSelectors, x.AgentAttributes.SelectorValues...)
+
 		if len(m.spiffeID) == 0 {
 			m.spiffeID = x.AgentAttributes.SpiffeId
+		} else if m.multiplesSpiffeIds {
+			m.spiffeID = m.spiffeID + "/" + x.AgentAttributes.SpiffeId
 		}
 
 		m.canReattest = append(m.canReattest, x.AgentAttributes.CanReattest)
@@ -98,4 +103,8 @@ func (m *HybridPluginServerInterceptor) CombinedSelectors() []string {
 
 func (m *HybridPluginServerInterceptor) Stream() nodeattestorv1.NodeAttestor_AttestServer {
 	return m.stream
+}
+
+func (m *HybridPluginServerInterceptor) SetMultipleSpiffeIds(state bool) {
+	m.multiplesSpiffeIds = state
 }
