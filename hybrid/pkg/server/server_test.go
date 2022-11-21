@@ -3,7 +3,6 @@ package hybrid_server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -441,16 +440,16 @@ func TestResetInterceptor(t *testing.T) {
 	interceptor := HybridPluginServerInterceptor{ctx: context.Background(), stream: StreamMock{}, logger: hclog.Default(), req: &req, Response: &resp,
 		combinedSelectors: []string{"test"}, spiffeID: "spiffe", canReattest: []bool{true}}
 
-	if interceptor.ctx == nil && interceptor.stream == nil && interceptor.logger == nil && interceptor.req == nil && interceptor.Response == nil &&
-		interceptor.combinedSelectors == nil && interceptor.spiffeID == "" && interceptor.canReattest == nil {
-		errors.New("Interceptor is empty")
+	if interceptor.ctx == nil || interceptor.stream == nil || interceptor.logger == nil || interceptor.req == nil || interceptor.Response == nil ||
+		interceptor.combinedSelectors == nil || interceptor.spiffeID == "" || interceptor.canReattest == nil {
+		t.Error("Interceptor has not been initialized properly")
 	}
 
 	interceptor.ResetInterceptor()
 
-	if interceptor.ctx != nil && interceptor.stream != nil && interceptor.logger != nil && interceptor.req != nil && interceptor.Response != nil &&
-		interceptor.combinedSelectors != nil && interceptor.spiffeID != "" && interceptor.canReattest != nil {
-		errors.New("Cannot reset interceptor")
+	if interceptor.ctx != nil || interceptor.stream != nil || interceptor.logger != nil || interceptor.req != nil || interceptor.Response != nil ||
+		interceptor.combinedSelectors != nil || interceptor.spiffeID != "" || interceptor.canReattest != nil {
+		t.Error("Could not reset interceptor")
 	}
 }
 
